@@ -111,7 +111,7 @@
   // ---- Spawning -------------------------------------------------------------
   function spawnWave(){
     waveN++;
-    difficulty = 1 + waveN*0.06;
+    difficulty = 1 + waveN*0.05;
     if (waveN>0 && waveN%8===0){ bossPending = true; return; }
     const kind = Math.random();
     if (kind < 0.5){ // V formation
@@ -131,9 +131,9 @@
 
   function mkEnemy(x,y,type,dir=0){
     const base = { x,y,type,dir,t:rnd(0,6.28),shoot:rnd(40,120),w:30,h:26,markPow:false };
-    if (type==="grunt")   Object.assign(base,{hp:1, vy:1.7*difficulty, score:100, w:28,h:24});
-    if (type==="sweeper") Object.assign(base,{hp:2, vy:0, vx:2.4*dir*difficulty, score:150});
-    if (type==="gunner")  Object.assign(base,{hp:3, vy:1.0*difficulty, score:250, w:34,h:30});
+    if (type==="grunt")   Object.assign(base,{hp:1, vy:1.5*difficulty, score:100, w:28,h:24});
+    if (type==="sweeper") Object.assign(base,{hp:2, vy:0, vx:2.1*dir*difficulty, score:150});
+    if (type==="gunner")  Object.assign(base,{hp:3, vy:0.9*difficulty, score:250, w:34,h:30});
     return base;
   }
 
@@ -193,7 +193,7 @@
     // Spawn waves
     if (!boss && !bossPending){
       spawnT--;
-      if (spawnT<=0){ spawnWave(); tagPowerCarrier(); spawnT = Math.max(60, 150 - waveN*4); }
+      if (spawnT<=0){ spawnWave(); tagPowerCarrier(); spawnT = Math.max(75, 160 - waveN*4); }
     }
     if (bossPending && enemies.length===0 && !boss){
       spawnBoss(); bossPending=false;
@@ -207,7 +207,7 @@
       if (e.type==="gunner"){ e.y+=e.vy; if(e.y>rnd(120,220)) e.vy*=0.96; }
       // shooting
       if ((e.type==="gunner") && e.y>0){
-        e.shoot--; if (e.shoot<=0){ shootAtPlayer(e, 3.0); e.shoot=rnd(70,130); }
+        e.shoot--; if (e.shoot<=0){ shootAtPlayer(e, 2.8); e.shoot=rnd(95,150); }
       }
     }
     // enemy off-screen cull
@@ -280,7 +280,7 @@
 
   // ---- Boss -----------------------------------------------------------------
   function spawnBoss(){
-    boss={ x:W/2, y:-120, w:120, h:80, hp:60+waveN*10, hpMax:60+waveN*10,
+    boss={ x:W/2, y:-120, w:120, h:80, hp:55+waveN*8, hpMax:55+waveN*8,
            t:0, phase:"enter", vx:1.6, flash:0, gun:0 };
     beep(120,0.5,"sawtooth",0.08);
   }
@@ -295,10 +295,10 @@
         // spread shot
         for(let i=-2;i<=2;i++){
           const a=Math.PI/2 + i*0.28;
-          ebullets.push({x:boss.x,y:boss.y+30,vx:Math.cos(a)*3.2,vy:Math.sin(a)*3.2,w:9,h:9});
+          ebullets.push({x:boss.x,y:boss.y+30,vx:Math.cos(a)*2.9,vy:Math.sin(a)*2.9,w:9,h:9});
         }
-        if (Math.random()<0.5) shootAtPlayer({x:boss.x,y:boss.y+30}, 4);
-        boss.gun = Math.max(28, 60 - waveN*2);
+        if (Math.random()<0.45) shootAtPlayer({x:boss.x,y:boss.y+30}, 3.6);
+        boss.gun = Math.max(34, 66 - waveN*2);
       }
     }
   }
@@ -331,17 +331,19 @@
     ctx.globalAlpha=1;
   }
 
+  // base drawing points NOSE-UP; pass flip=true to point nose-down (enemies)
   function drawPlane(x,y,scale,color,dark,flip){
     ctx.save(); ctx.translate(x,y); ctx.scale(scale, flip?-scale:scale);
-    // fuselage
-    ctx.fillStyle=color;
-    ctx.beginPath(); ctx.moveTo(0,-16); ctx.lineTo(5,10); ctx.lineTo(0,16); ctx.lineTo(-5,10); ctx.closePath(); ctx.fill();
-    // wings
+    // main delta wing (wide span, apex toward nose)
     ctx.fillStyle=dark;
-    ctx.beginPath(); ctx.moveTo(-18,4); ctx.lineTo(18,4); ctx.lineTo(10,10); ctx.lineTo(-10,10); ctx.closePath(); ctx.fill();
-    ctx.fillRect(-7,-14,14,4); // tail wing
-    // cockpit
-    ctx.fillStyle="#bfe3ff"; ctx.beginPath(); ctx.arc(0,-2,3,0,7); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(0,-6); ctx.lineTo(-18,11); ctx.lineTo(18,11); ctx.closePath(); ctx.fill();
+    // tail stabilizer at the rear (bottom)
+    ctx.fillRect(-8,12,16,4);
+    // fuselage: sharp nose at top, tapering to tail at bottom
+    ctx.fillStyle=color;
+    ctx.beginPath(); ctx.moveTo(0,-18); ctx.lineTo(4,8); ctx.lineTo(0,16); ctx.lineTo(-4,8); ctx.closePath(); ctx.fill();
+    // cockpit near the nose
+    ctx.fillStyle="#bfe3ff"; ctx.beginPath(); ctx.arc(0,-6,3,0,7); ctx.fill();
     ctx.restore();
   }
 
@@ -371,7 +373,7 @@
 
   function drawBoss(){
     if (!boss) return;
-    ctx.save(); ctx.translate(boss.x,boss.y);
+    ctx.save(); ctx.translate(boss.x,boss.y); ctx.scale(1,-1); // nose-down (faces the player)
     ctx.fillStyle = boss.flash>0? "#ffffff":"#9aa7bb";
     // big bomber body
     ctx.beginPath(); ctx.moveTo(0,-40); ctx.lineTo(20,30); ctx.lineTo(-20,30); ctx.closePath(); ctx.fill();
